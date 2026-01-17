@@ -16,8 +16,13 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Middleware
-app.use(cors());
-app.options('*', cors());
+app.use(
+    cors({
+        origin: "https://english-poc-fe-production.up.railway.app",
+        credentials: true,
+        methods: ["POST", "GET", "PUT", "DELETE"],
+    })
+);
 app.use(bodyParser.json());
 
 // API Routes

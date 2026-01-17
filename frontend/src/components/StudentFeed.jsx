@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useData } from '../hooks/useData';
 
 export function StudentFeed({ studentId }) {
     const { students, studentAssignments, assignments, updateAssignmentStatus } = useData();
+    const [essayContent, setEssayContent] = useState({}); // Map assignmentId -> content
 
     const student = students.find(s => s.id === studentId);
 
@@ -28,6 +30,7 @@ export function StudentFeed({ studentId }) {
         const styles = {
             'pending': { bg: 'var(--bg-secondary)', color: 'var(--text-secondary)' },
             'in-progress': { bg: 'rgba(245, 158, 11, 0.1)', color: 'var(--text-brand)' },
+            'submitted': { bg: 'rgba(59, 130, 246, 0.1)', color: 'var(--text-accent)' },
             'completed': { bg: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-color)' }
         };
         const style = styles[status] || styles['pending'];
@@ -45,6 +48,16 @@ export function StudentFeed({ studentId }) {
                 {status}
             </span>
         );
+    };
+
+    const handleEssayChange = (id, value) => {
+        setEssayContent(prev => ({ ...prev, [id]: value }));
+    };
+
+    const submitEssay = (assignment) => {
+        const content = essayContent[assignment.id];
+        if (!content) return;
+        updateAssignmentStatus(assignment.id, 'submitted', { submissionContent: content });
     };
 
     return (
@@ -104,21 +117,60 @@ export function StudentFeed({ studentId }) {
                                         {assignment.template?.description}
                                     </p>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: 'var(--spacing-md)' }}>
-                                        <span>Due: {assignment.dueDate || 'No date'}</span>
+                                    {/* Essay Workflow UI */}
+                                    {assignment.template?.type === 'essay' && assignment.status === 'in-progress' && (
+                                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                                            <textarea
+                                                value={essayContent[assignment.id] || ''}
+                                                onChange={(e) => handleEssayChange(assignment.id, e.target.value)}
+                                                placeholder="Write your essay here..."
+                                                rows={6}
+                                                style={{ width: '100%', resize: 'vertical' }}
+                                            />
+                                        </div>
+                                    )}
 
-                                        {assignment.status !== 'completed' && (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                {assignment.status === 'pending' && (
+                                    {/* Read-only Submission view */}
+                                    {assignment.submissionContent && (
+                                        <div style={{ backgroundColor: 'var(--bg-primary)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                            <h4 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Your Submission:</h4>
+                                            <p style={{ whiteSpace: 'pre-wrap' }}>{assignment.submissionContent}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Teacher Feedback */}
+                                    {assignment.teacherFeedback && (
+                                        <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', border: '1px solid var(--success-color)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                            <h4 style={{ fontSize: '0.8rem', color: 'var(--success-color)', marginBottom: '0.5rem' }}>Teacher Feedback:</h4>
+                                            <p style={{ whiteSpace: 'pre-wrap' }}>{assignment.teacherFeedback}</p>
+                                            {assignment.grade && <p style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>Grade: {assignment.grade}</p>}
+                                        </div>
+                                    )}
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: 'var(--spacing-md)' }}>
+                                        <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No date'}</span>
+
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            {assignment.status === 'pending' && (
+                                                <button
+                                                    className="btn"
+                                                    style={{ border: '1px solid var(--text-brand)', color: 'var(--text-brand)', padding: '0.25rem 1rem' }}
+                                                    onClick={() => updateAssignmentStatus(assignment.id, 'in-progress')}
+                                                >
+                                                    Start
+                                                </button>
+                                            )}
+
+                                            {assignment.status === 'in-progress' && (
+                                                assignment.template?.type === 'essay' ? (
                                                     <button
-                                                        className="btn"
-                                                        style={{ border: '1px solid var(--text-brand)', color: 'var(--text-brand)', padding: '0.25rem 1rem' }}
-                                                        onClick={() => updateAssignmentStatus(assignment.id, 'in-progress')}
+                                                        className="btn btn-primary"
+                                                        onClick={() => submitEssay(assignment)}
+                                                        disabled={!essayContent[assignment.id]}
                                                     >
-                                                        Start
+                                                        Submit Essay
                                                     </button>
-                                                )}
-                                                {assignment.status === 'in-progress' && (
+                                                ) : (
                                                     <button
                                                         className="btn"
                                                         style={{ backgroundColor: 'var(--success-color)', color: '#fff', padding: '0.25rem 1rem' }}
@@ -126,9 +178,9 @@ export function StudentFeed({ studentId }) {
                                                     >
                                                         Complete
                                                     </button>
-                                                )}
-                                            </div>
-                                        )}
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -81,12 +81,12 @@ export function DataProvider({ children }) {
         }
     };
 
-    const updateAssignmentStatus = async (id, status) => {
+    const updateAssignmentStatus = async (id, status, data = {}) => {
         try {
             const res = await fetch(`${API_Base}/student-assignments/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({ status, ...data })
             });
             const updatedLink = await res.json();
 

@@ -5,6 +5,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { StudentsPage } from './pages/StudentsPage';
 import { AssignmentsPage } from './pages/AssignmentsPage';
 import { GrammarPage } from './pages/GrammarPage';
+import { ReviewsPage } from './pages/ReviewsPage';
 import { StudentFeed } from './components/StudentFeed';
 
 // Component to handle redirection logic inside Router
@@ -37,6 +38,7 @@ function AppRoutes({ currentUser, setCurrentUser, students }) {
         <Route element={<AdminLayout currentUser={currentUser} onSwitchUser={handleSwitchUser} students={students} />}>
           <Route path="/students" element={<StudentsPage />} />
           <Route path="/assignments" element={<AssignmentsPage />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/grammar" element={<GrammarPage />} />
           <Route path="*" element={<Navigate to="/students" replace />} />
         </Route>

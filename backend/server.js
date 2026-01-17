@@ -107,11 +107,21 @@ app.post('/api/student-assignments', async (req, res) => {
 app.patch('/api/student-assignments/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, submissionContent, teacherFeedback, grade } = req.body;
+
+        // Construct update object dynamically to only update provided fields
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (submissionContent) {
+            updateData.submissionContent = submissionContent;
+            updateData.submittedAt = new Date(); // Auto-set timestamp on submission
+        }
+        if (teacherFeedback) updateData.teacherFeedback = teacherFeedback;
+        if (grade) updateData.grade = grade;
 
         const link = await StudentAssignment.findByIdAndUpdate(
             id,
-            { status },
+            updateData,
             { new: true } // Return updated document
         );
 

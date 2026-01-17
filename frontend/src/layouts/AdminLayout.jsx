@@ -64,6 +64,22 @@ export function AdminLayout({ currentUser, onSwitchUser, students }) {
                                 📖 Grammar
                             </Link>
                         </li>
+                        <li>
+                            <Link
+                                to="/reviews"
+                                style={{
+                                    display: 'block',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: isActive('/reviews') ? 'var(--bg-secondary)' : 'transparent',
+                                    color: isActive('/reviews') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    fontWeight: isActive('/reviews') ? '600' : '400',
+                                    textDecoration: 'none'
+                                }}
+                            >
+                                📝 Reviews
+                            </Link>
+                        </li>
                     </ul>
                 </nav>
 

@@ -19,7 +19,7 @@ function AppRoutes({ currentUser, setCurrentUser, students }) {
   useEffect(() => {
     if (isTeacher) {
       if (location.pathname === '/' || !['/students', '/assignments', '/grammar', '/reviews'].includes(location.pathname)) {
-        navigate('/students');
+        navigate('/reviews');
       }
     } else {
       if (location.pathname !== '/') {

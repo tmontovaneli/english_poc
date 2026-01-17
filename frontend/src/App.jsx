@@ -18,7 +18,7 @@ function AppRoutes({ currentUser, setCurrentUser, students }) {
   // Redirect to appropriate view when context changes
   useEffect(() => {
     if (isTeacher) {
-      if (location.pathname === '/' || !['/students', '/assignments', '/grammar'].includes(location.pathname)) {
+      if (location.pathname === '/' || !['/students', '/assignments', '/grammar', '/reviews'].includes(location.pathname)) {
         navigate('/students');
       }
     } else {

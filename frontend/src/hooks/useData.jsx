@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const DataContext = createContext();
 
-const API_Base = process.env.API_URL || 'http://localhost:3000/api';
+const API_Base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export function DataProvider({ children }) {
     const [students, setStudents] = useState([]);

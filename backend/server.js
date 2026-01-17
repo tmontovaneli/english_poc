@@ -130,7 +130,7 @@ const fs = require('fs');
 const path = require('path');
 
 app.get('/api/grammar', (req, res) => {
-    const grammarDir = path.join(__dirname, '../grammar');
+    const grammarDir = path.join(__dirname, './grammar');
 
     if (!fs.existsSync(grammarDir)) {
         return res.json([]);
@@ -153,7 +153,7 @@ app.get('/api/grammar', (req, res) => {
 
 app.get('/api/grammar/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../grammar', filename);
+    const filePath = path.join(__dirname, './grammar', filename);
 
     // Security check to prevent directory traversal
     if (filename.includes('..') || !filename.endsWith('.md')) {

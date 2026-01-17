@@ -40,7 +40,7 @@ export function DataProvider({ children }) {
     // Actions
     const addStudent = async (name, level) => {
         try {
-            console.error("API_Base = ", API_Base);
+            console.info("API_Base = " + API_Base);
             const res = await fetch(`${API_Base}/students`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

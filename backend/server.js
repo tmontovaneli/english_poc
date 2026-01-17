@@ -16,14 +16,8 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 
-// Configure CORS with specific origins
-const allowedOrigins = [
-    "https://english-poc-fe-production.up.railway.app/",
-    "http://localhost:3000",
-];
-
 const corsOptions = {
-    origin: allowedOrigins,
+    origin: "*",
     credentials: true, // If you are using cookies/sessions
 };
 

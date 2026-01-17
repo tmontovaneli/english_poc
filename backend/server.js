@@ -15,14 +15,9 @@ const PORT = process.env.PORT || 3000;
 // Connect to Database
 connectDB();
 
-
-const corsOptions = {
-    origin: "*",
-    credentials: true, // If you are using cookies/sessions
-};
-
 // Middleware
-app.use(cors(corsOptions));
+app.use(cors());
+app.options('*', cors());
 app.use(bodyParser.json());
 
 // API Routes

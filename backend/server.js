@@ -125,6 +125,49 @@ app.patch('/api/student-assignments/:id', async (req, res) => {
     }
 });
 
+// Grammar Routes
+const fs = require('fs');
+const path = require('path');
+
+app.get('/api/grammar', (req, res) => {
+    const grammarDir = path.join(__dirname, '../grammar');
+
+    if (!fs.existsSync(grammarDir)) {
+        return res.json([]);
+    }
+
+    fs.readdir(grammarDir, (err, files) => {
+        if (err) {
+            return res.status(500).json({ message: 'Unable to scan directory' });
+        }
+        // Filter only markdown files if needed, or send all
+        const grammarFiles = files
+            .filter(file => file.endsWith('.md'))
+            .map(file => ({
+                name: file,
+                path: `/api/grammar/${file}`
+            }));
+        res.json(grammarFiles);
+    });
+});
+
+app.get('/api/grammar/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, '../grammar', filename);
+
+    // Security check to prevent directory traversal
+    if (filename.includes('..') || !filename.endsWith('.md')) {
+        return res.status(400).json({ message: 'Invalid file request' });
+    }
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+        res.json({ content: data });
+    });
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

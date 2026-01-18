@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useData } from '../hooks/useData';
 
 export function ReviewsPage() {
@@ -6,6 +6,7 @@ export function ReviewsPage() {
     const [selectedSubmission, setSelectedSubmission] = useState(null);
     const [feedback, setFeedback] = useState('');
     const [grade, setGrade] = useState('');
+    const textareaRef = useRef(null);
 
     const submittedAssignments = studentAssignments
         .filter(sa => sa.status === 'submitted')
@@ -19,6 +20,30 @@ export function ReviewsPage() {
         setSelectedSubmission(submission);
         setFeedback(submission.teacherFeedback || '');
         setGrade(submission.grade || '');
+    };
+
+    const handleFormat = (type) => {
+        if (!textareaRef.current) return;
+
+        const start = textareaRef.current.selectionStart;
+        const end = textareaRef.current.selectionEnd;
+        const text = feedback;
+
+        let prefix = '';
+        let suffix = '';
+
+        switch (type) {
+            case 'bold': prefix = '**'; suffix = '**'; break;
+            case 'italic': prefix = '*'; suffix = '*'; break;
+            case 'strike': prefix = '~~'; suffix = '~~'; break;
+            default: return;
+        }
+
+        const newText = text.substring(0, start) + prefix + text.substring(start, end) + suffix + text.substring(end);
+        setFeedback(newText);
+
+        // Restore focus
+        textareaRef.current.focus();
     };
 
     const handleComplete = async () => {
@@ -97,7 +122,16 @@ export function ReviewsPage() {
 
                         <div style={{ marginBottom: 'var(--spacing-md)' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Feedback</label>
+
+                            {/* Toolbar */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <button className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)' }} onClick={() => handleFormat('bold')}><b>B</b></button>
+                                <button className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)' }} onClick={() => handleFormat('italic')}><i>I</i></button>
+                                <button className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)' }} onClick={() => handleFormat('strike')}><strike>S</strike></button>
+                            </div>
+
                             <textarea
+                                ref={textareaRef}
                                 value={feedback}
                                 onChange={(e) => setFeedback(e.target.value)}
                                 rows={4}

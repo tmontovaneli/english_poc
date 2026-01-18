@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useData } from '../hooks/useData';
 
 export function StudentFeed({ studentId }) {
@@ -140,9 +142,11 @@ export function StudentFeed({ studentId }) {
 
                                     {/* Teacher Feedback */}
                                     {assignment.teacherFeedback && (
-                                        <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', border: '1px solid var(--success-color)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                        <div className="markdown-content" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', border: '1px solid var(--success-color)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
                                             <h4 style={{ fontSize: '0.8rem', color: 'var(--success-color)', marginBottom: '0.5rem' }}>Teacher Feedback:</h4>
-                                            <p style={{ whiteSpace: 'pre-wrap' }}>{assignment.teacherFeedback}</p>
+                                            <div style={{ lineHeight: 1.6 }}>
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{assignment.teacherFeedback}</ReactMarkdown>
+                                            </div>
                                             {assignment.grade && <p style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>Grade: {assignment.grade}</p>}
                                         </div>
                                     )}

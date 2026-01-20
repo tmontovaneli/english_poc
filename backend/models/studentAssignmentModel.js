@@ -13,7 +13,7 @@ const studentAssignmentSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in-progress', 'completed'],
+        enum: ['pending', 'in-progress', 'submitted', 'completed'],
         default: 'pending'
     },
     dueDate: {
@@ -22,6 +22,18 @@ const studentAssignmentSchema = mongoose.Schema({
     assignedAt: {
         type: Date,
         default: Date.now
+    },
+    submissionContent: {
+        type: String
+    },
+    teacherFeedback: {
+        type: String
+    },
+    grade: {
+        type: String
+    },
+    submittedAt: {
+        type: Date
     }
 }, {
     timestamps: true,

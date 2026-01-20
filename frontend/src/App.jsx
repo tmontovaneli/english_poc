@@ -1,78 +1,125 @@
-import { useState } from 'react';
-import { useData } from './hooks/useData';
-import { AddStudentForm } from './components/AddStudentForm';
-import { StudentList } from './components/StudentList';
-import { AddAssignmentForm } from './components/AddAssignmentForm';
-import { AssignmentTemplateList } from './components/AssignmentTemplateList';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { useData, DataProvider } from './hooks/useData';
+import { AdminLayout } from './layouts/AdminLayout';
+import { StudentsPage } from './pages/StudentsPage';
+import { AssignmentsPage } from './pages/AssignmentsPage';
+import { GrammarPage } from './pages/GrammarPage';
+import { ReviewsPage } from './pages/ReviewsPage';
 import { StudentFeed } from './components/StudentFeed';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { UsersPage } from './pages/UsersPage';
+import { PrivateRoute } from './components/PrivateRoute';
 
-function App() {
-  const { students } = useData();
-  const [currentUser, setCurrentUser] = useState('teacher'); // 'teacher' or studentId
+// Component to handle redirection logic inside Router
+function AppRoutes({ students }) {
+  const { user, loading } = useAuth();
 
-  const isTeacher = currentUser === 'teacher';
+  if (loading) return <div>Loading...</div>;
+
+  const isTeacher = user?.role === 'teacher' || user?.role === 'admin';
+
+  // Helper to determine where to redirect logging out or root access
+  // But PrivateRoute handles the protection. 
 
   return (
-    <div className="container" style={{ padding: '2rem 0' }}>
-      <header style={{ marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-            English Student <span style={{ color: 'var(--text-brand)' }}>Dashboard</span>
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage assignments and student progress.</p>
-        </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-        {/* Context Switcher - Simulates Login */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          backgroundColor: 'var(--bg-card)',
-          padding: '0.5rem 1rem',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-color)'
-        }}>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Viewing as:</span>
-          <select
-            value={currentUser}
-            onChange={(e) => setCurrentUser(e.target.value)}
-            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
-          >
-            <option value="teacher">👨‍🏫 Teacher (Admin)</option>
-            {students.length > 0 && <optgroup label="Students">
-              {students.map(s => (
-                <option key={s.id} value={s.id}>📝 {s.name}</option>
-              ))}
-            </optgroup>}
-          </select>
-        </div>
-      </header>
-
-      {isTeacher ? (
-        <main style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 'var(--spacing-xl)' }}>
-          <section>
-            <h2 style={{ marginBottom: 'var(--spacing-md)', fontSize: '1.25rem' }}>Students</h2>
-            <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
-              <AddStudentForm />
-              <StudentList />
+      <Route element={<PrivateRoute />}>
+        {/* 
+                  If user is teacher, they can access admin routes. 
+                  If they are student, they should only see student feed.
+                  We can implement a role check wrapper or simple logic here.
+                */}
+        {isTeacher ? (
+          <Route element={<AdminLayout currentUser="teacher" onSwitchUser={() => { }} students={students} />}>
+            <Route path="/students" element={<StudentsPage />} />
+            <Route path="/assignments" element={<AssignmentsPage />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/grammar" element={<GrammarPage />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="*" element={<Navigate to="/reviews" replace />} />
+          </Route>
+        ) : (
+          /* Student Routes - Catch all for students and show feed */
+          <Route path="*" element={
+            <div className="container" style={{ padding: '2rem 0' }}>
+              <StudentHeader />
+              <StudentFeed studentId={user?.id} />
             </div>
-          </section>
-
-          <section>
-            <h2 style={{ marginBottom: 'var(--spacing-md)', fontSize: '1.25rem' }}>Assignment Templates</h2>
-            <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
-              <AddAssignmentForm />
-              <AssignmentTemplateList />
-            </div>
-          </section>
-        </main>
-      ) : (
-        <main>
-          <StudentFeed studentId={currentUser} />
-        </main>
-      )}
-    </div>
-  )
+          } />
+        )}
+      </Route>
+    </Routes>
+  );
 }
 
-export default App
+function App() {
+  // We need DataProvider inside AuthProvider ideally because useData depends on useAuth now.
+  // So AuthProvider -> DataProvider -> Routes
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <DataProvider>
+          <InnerApp />
+        </DataProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+function InnerApp() {
+  const { students } = useData();
+  return <AppRoutes students={students} />;
+}
+
+function StudentHeader() {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <header style={{
+      marginBottom: '2rem',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '1rem',
+      backgroundColor: 'var(--bg-card)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--border-color)'
+    }}>
+      <div>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Student Dashboard</h2>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+          Welcome, {user?.username}
+        </p>
+      </div>
+      <button
+        onClick={handleLogout}
+        style={{
+          padding: '0.5rem 1rem',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          border: 'none',
+          borderRadius: 'var(--radius-md)',
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontSize: '0.875rem'
+        }}
+      >
+        🚪 Sign Out
+      </button>
+    </header>
+  );
+}
+
+export default App;
+

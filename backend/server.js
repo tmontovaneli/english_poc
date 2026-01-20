@@ -3,6 +3,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 const connectDB = require('./config/db');
+const { protect } = require('./middleware/authMiddleware');
+const { requireAdmin, requireTeacherOrAdmin } = require('./middleware/roleMiddleware');
+const { registerUser, loginUser, getMe } = require('./controllers/authController');
+const { getAllUsers, createUser, updateUser, deleteUser } = require('./controllers/userController');
 
 // Models
 const Student = require('./models/studentModel');
@@ -15,14 +19,38 @@ const PORT = process.env.PORT || 3000;
 // Connect to Database
 connectDB();
 
-// Middleware
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'https://english-poc-fe-production.up.railway.app'];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+            return callback(null, true);
+        }
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+    }
+}));
 app.use(bodyParser.json());
 
 // API Routes
 
+// Auth Routes
+app.post('/api/auth/register', registerUser);
+app.post('/api/auth/login', loginUser);
+app.get('/api/auth/me', protect, getMe);
+
+// User Management Routes (Admin/Teacher only)
+app.get('/api/users', protect, requireTeacherOrAdmin, getAllUsers);
+app.post('/api/users', protect, requireAdmin, createUser);
+app.put('/api/users/:id', protect, requireAdmin, updateUser);
+app.delete('/api/users/:id', protect, requireAdmin, deleteUser);
+
 // Students
-app.get('/api/students', async (req, res) => {
+app.get('/api/students', protect, async (req, res) => {
     try {
         const students = await Student.find().sort({ createdAt: -1 });
         res.json(students);
@@ -31,7 +59,7 @@ app.get('/api/students', async (req, res) => {
     }
 });
 
-app.post('/api/students', async (req, res) => {
+app.post('/api/students', protect, async (req, res) => {
     try {
         const { name, level } = req.body;
         const student = await Student.create({ name, level });
@@ -41,8 +69,29 @@ app.post('/api/students', async (req, res) => {
     }
 });
 
+// Link/Unlink User to Student
+app.patch('/api/students/:id/link-user', protect, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body; // userId can be null to unlink
+
+        const student = await Student.findById(id);
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        student.userId = userId || null;
+        await student.save();
+
+        res.json(student);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+
 // Assignment Templates
-app.get('/api/assignments', async (req, res) => {
+app.get('/api/assignments', protect, async (req, res) => {
     try {
         const assignments = await Assignment.find().sort({ createdAt: -1 });
         res.json(assignments);
@@ -51,7 +100,7 @@ app.get('/api/assignments', async (req, res) => {
     }
 });
 
-app.post('/api/assignments', async (req, res) => {
+app.post('/api/assignments', protect, async (req, res) => {
     try {
         const { title, description, type } = req.body;
         const assignment = await Assignment.create({
@@ -66,7 +115,7 @@ app.post('/api/assignments', async (req, res) => {
 });
 
 // Student Assignments (Linking)
-app.get('/api/student-assignments', async (req, res) => {
+app.get('/api/student-assignments', protect, async (req, res) => {
     try {
         // Populate simply to verify integrity if needed, but the frontend does mostly client-side joining.
         // Ideally we should populate here, but to keep consistent with previous logic we return IDs.
@@ -77,7 +126,7 @@ app.get('/api/student-assignments', async (req, res) => {
     }
 });
 
-app.post('/api/student-assignments', async (req, res) => {
+app.post('/api/student-assignments', protect, async (req, res) => {
     try {
         const { studentId, assignmentId, dueDate } = req.body;
         const link = await StudentAssignment.create({
@@ -91,14 +140,24 @@ app.post('/api/student-assignments', async (req, res) => {
     }
 });
 
-app.patch('/api/student-assignments/:id', async (req, res) => {
+app.patch('/api/student-assignments/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, submissionContent, teacherFeedback, grade } = req.body;
+
+        // Construct update object dynamically to only update provided fields
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (submissionContent) {
+            updateData.submissionContent = submissionContent;
+            updateData.submittedAt = new Date(); // Auto-set timestamp on submission
+        }
+        if (teacherFeedback) updateData.teacherFeedback = teacherFeedback;
+        if (grade) updateData.grade = grade;
 
         const link = await StudentAssignment.findByIdAndUpdate(
             id,
-            { status },
+            updateData,
             { new: true } // Return updated document
         );
 
@@ -110,6 +169,49 @@ app.patch('/api/student-assignments/:id', async (req, res) => {
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
+});
+
+// Grammar Routes
+const fs = require('fs');
+const path = require('path');
+
+app.get('/api/grammar', (req, res) => {
+    const grammarDir = path.join(__dirname, './grammar');
+
+    if (!fs.existsSync(grammarDir)) {
+        return res.json([]);
+    }
+
+    fs.readdir(grammarDir, (err, files) => {
+        if (err) {
+            return res.status(500).json({ message: 'Unable to scan directory' });
+        }
+        // Filter only markdown files if needed, or send all
+        const grammarFiles = files
+            .filter(file => file.endsWith('.md'))
+            .map(file => ({
+                name: file,
+                path: `/api/grammar/${file}`
+            }));
+        res.json(grammarFiles);
+    });
+});
+
+app.get('/api/grammar/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, './grammar', filename);
+
+    // Security check to prevent directory traversal
+    if (filename.includes('..') || !filename.endsWith('.md')) {
+        return res.status(400).json({ message: 'Invalid file request' });
+    }
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+        res.json({ content: data });
+    });
 });
 
 // Start Server

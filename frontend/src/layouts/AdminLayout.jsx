@@ -1,4 +1,5 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export function AdminLayout({ currentUser, onSwitchUser, students }) {
     const location = useLocation();
@@ -80,10 +81,27 @@ export function AdminLayout({ currentUser, onSwitchUser, students }) {
                                 📝 Reviews
                             </Link>
                         </li>
+                        <li>
+                            <Link
+                                to="/users"
+                                style={{
+                                    display: 'block',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    backgroundColor: isActive('/users') ? 'var(--bg-secondary)' : 'transparent',
+                                    color: isActive('/users') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    fontWeight: isActive('/users') ? '600' : '400',
+                                    textDecoration: 'none'
+                                }}
+                            >
+                                👥 Users
+                            </Link>
+                        </li>
                     </ul>
                 </nav>
 
-                {/* User Switcher in Sidebar (optional placement) */}
+                {/* User Switcher in Sidebar (optional placement) 
+
                 <div style={{ padding: 'var(--spacing-md)', borderTop: '1px solid var(--border-color)' }}>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Switch Context</label>
                     <select
@@ -99,12 +117,47 @@ export function AdminLayout({ currentUser, onSwitchUser, students }) {
                         </optgroup>}
                     </select>
                 </div>
+                */}
+
+                {/* Logout Button */}
+                <LogoutButton />
             </aside>
 
             {/* Main Content */}
             <main>
                 <Outlet />
             </main>
+        </div>
+    );
+}
+
+function LogoutButton() {
+    const { logout, user } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
+    return (
+        <div style={{ padding: 'var(--spacing-md)', borderTop: '1px solid var(--border-color)' }}>
+            <button
+                onClick={handleLogout}
+                style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                }}
+            >
+                🚪 Sign Out {user?.username && `(${user.username})`}
+            </button>
         </div>
     );
 }

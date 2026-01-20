@@ -3,6 +3,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 const connectDB = require('./config/db');
+const { protect } = require('./middleware/authMiddleware');
+const { requireAdmin, requireTeacherOrAdmin } = require('./middleware/roleMiddleware');
+const { registerUser, loginUser, getMe } = require('./controllers/authController');
+const { getAllUsers, createUser, updateUser, deleteUser } = require('./controllers/userController');
 
 // Models
 const Student = require('./models/studentModel');
@@ -34,8 +38,19 @@ app.use(bodyParser.json());
 
 // API Routes
 
+// Auth Routes
+app.post('/api/auth/register', registerUser);
+app.post('/api/auth/login', loginUser);
+app.get('/api/auth/me', protect, getMe);
+
+// User Management Routes (Admin/Teacher only)
+app.get('/api/users', protect, requireTeacherOrAdmin, getAllUsers);
+app.post('/api/users', protect, requireAdmin, createUser);
+app.put('/api/users/:id', protect, requireAdmin, updateUser);
+app.delete('/api/users/:id', protect, requireAdmin, deleteUser);
+
 // Students
-app.get('/api/students', async (req, res) => {
+app.get('/api/students', protect, async (req, res) => {
     try {
         const students = await Student.find().sort({ createdAt: -1 });
         res.json(students);
@@ -44,7 +59,7 @@ app.get('/api/students', async (req, res) => {
     }
 });
 
-app.post('/api/students', async (req, res) => {
+app.post('/api/students', protect, async (req, res) => {
     try {
         const { name, level } = req.body;
         const student = await Student.create({ name, level });
@@ -54,8 +69,29 @@ app.post('/api/students', async (req, res) => {
     }
 });
 
+// Link/Unlink User to Student
+app.patch('/api/students/:id/link-user', protect, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body; // userId can be null to unlink
+
+        const student = await Student.findById(id);
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        student.userId = userId || null;
+        await student.save();
+
+        res.json(student);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+
 // Assignment Templates
-app.get('/api/assignments', async (req, res) => {
+app.get('/api/assignments', protect, async (req, res) => {
     try {
         const assignments = await Assignment.find().sort({ createdAt: -1 });
         res.json(assignments);
@@ -64,7 +100,7 @@ app.get('/api/assignments', async (req, res) => {
     }
 });
 
-app.post('/api/assignments', async (req, res) => {
+app.post('/api/assignments', protect, async (req, res) => {
     try {
         const { title, description, type } = req.body;
         const assignment = await Assignment.create({
@@ -79,7 +115,7 @@ app.post('/api/assignments', async (req, res) => {
 });
 
 // Student Assignments (Linking)
-app.get('/api/student-assignments', async (req, res) => {
+app.get('/api/student-assignments', protect, async (req, res) => {
     try {
         // Populate simply to verify integrity if needed, but the frontend does mostly client-side joining.
         // Ideally we should populate here, but to keep consistent with previous logic we return IDs.
@@ -90,7 +126,7 @@ app.get('/api/student-assignments', async (req, res) => {
     }
 });
 
-app.post('/api/student-assignments', async (req, res) => {
+app.post('/api/student-assignments', protect, async (req, res) => {
     try {
         const { studentId, assignmentId, dueDate } = req.body;
         const link = await StudentAssignment.create({
@@ -104,7 +140,7 @@ app.post('/api/student-assignments', async (req, res) => {
     }
 });
 
-app.patch('/api/student-assignments/:id', async (req, res) => {
+app.patch('/api/student-assignments/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
         const { status, submissionContent, teacherFeedback, grade } = req.body;

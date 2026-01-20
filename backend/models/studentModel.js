@@ -8,6 +8,13 @@ const studentSchema = mongoose.Schema({
     level: {
         type: String,
         required: true
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+        unique: true,
+        sparse: true // Allows multiple null values but enforces uniqueness for non-null values
     }
 }, {
     timestamps: true,

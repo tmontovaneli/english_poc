@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useData } from '../hooks/useData';
+import { useAuth } from '../context/AuthContext';
+import { AddGrammarForm } from '../components/AddGrammarForm';
+import { EditGrammarForm } from '../components/EditGrammarForm';
 
 export function GrammarPage() {
+    const { user } = useAuth();
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedFile, setSelectedFile] = useState(null);
     const [fileContent, setFileContent] = useState('');
+    const [editingLesson, setEditingLesson] = useState(null);
 
     // We need to access API_Base from useData or import it directly. 
     // Since useData doesn't export API_Base, we might need to recreate it or refactor useData.
@@ -15,41 +19,91 @@ export function GrammarPage() {
     // For now, I will use import.meta.env.VITE_API_URL locally here to avoid big refactor.
     const API_Base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-    useEffect(() => {
-        fetch(`${API_Base}/grammar`)
+    const fetchLessons = () => {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        fetch(`${API_Base}/grammar`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
             .then(res => res.json())
             .then(data => {
-                setFiles(data);
+                setFiles(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
-                console.error("Failed to load grammar files", err);
+                console.error("Failed to load grammar lessons", err);
+                setFiles([]);
                 setLoading(false);
             });
+    };
+
+    const handleLessonAdded = (newLesson) => {
+        setFiles(prev => [...prev, newLesson].sort((a, b) => a.order - b.order));
+    };
+
+    useEffect(() => {
+        fetchLessons();
     }, []);
 
-    const handleFileClick = async (filename) => {
-        if (selectedFile === filename) {
+    const handleLessonClick = async (slug) => {
+        if (selectedFile === slug) {
             setSelectedFile(null); // Toggle close
             setFileContent('');
             return;
         }
 
         try {
-            const res = await fetch(`${API_Base}/grammar/${filename}`);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_Base}/grammar/slug/${slug}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await res.json();
             setFileContent(data.content);
-            setSelectedFile(filename);
+            setSelectedFile(slug);
         } catch (error) {
-            console.error("Failed to load file content", error);
+            console.error("Failed to load lesson content", error);
         }
     };
 
-    const formatLessonName = (filename) => {
-        return filename.replace(/\.md$/, '')
-            .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
+    const handleDeleteLesson = async (lesson) => {
+        if (!window.confirm(`Are you sure you want to delete "${lesson.title}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_Base}/grammar/${lesson.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete lesson');
+            }
+
+            setFiles(prev => prev.filter(l => l.id !== lesson.id));
+            if (selectedFile === lesson.slug) {
+                setSelectedFile(null);
+                setFileContent('');
+            }
+        } catch (error) {
+            console.error("Failed to delete lesson", error);
+            alert('Failed to delete lesson');
+        }
+    };
+
+    const handleLessonUpdated = (updatedLesson) => {
+        setFiles(prev =>
+            prev.map(l => l.id === updatedLesson.id ? updatedLesson : l)
+                .sort((a, b) => a.order - b.order)
+        );
+        setEditingLesson(null);
     };
 
     return (
@@ -58,6 +112,10 @@ export function GrammarPage() {
                 <h2 style={{ fontSize: '2rem' }}>Grammar Rules</h2>
                 <p style={{ color: 'var(--text-secondary)' }}>Review grammar documentation.</p>
             </header>
+
+            {user && user.role === 'admin' && (
+                <AddGrammarForm onLessonAdded={handleLessonAdded} />
+            )}
 
             {loading ? (
                 <div className="card">Loading...</div>
@@ -69,35 +127,65 @@ export function GrammarPage() {
                         <thead>
                             <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
                                 <th style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>Lesson Topic</th>
-                                <th style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)', width: '100px' }}>Action</th>
+                                <th style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)', width: 'auto' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {files.map(file => (
+                            {files.map(lesson => (
                                 <>
-                                    <tr key={file.name} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                    <tr key={lesson.slug} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                         <td style={{ padding: 'var(--spacing-md)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span>📄</span>
-                                                <span style={{ fontWeight: '500' }}>{formatLessonName(file.name)}</span>
+                                                <span style={{ fontWeight: '500' }}>{lesson.order + " - " + lesson.title}</span>
                                             </div>
                                         </td>
                                         <td style={{ padding: 'var(--spacing-md)' }}>
-                                            <button
-                                                className="btn"
-                                                onClick={() => handleFileClick(file.name)}
-                                                style={{
-                                                    padding: '0.25rem 0.75rem',
-                                                    fontSize: '0.875rem',
-                                                    backgroundColor: selectedFile === file.name ? 'var(--text-brand)' : 'var(--bg-secondary)',
-                                                    color: selectedFile === file.name ? '#fff' : 'var(--text-primary)'
-                                                }}
-                                            >
-                                                {selectedFile === file.name ? 'Close' : 'View'}
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                <button
+                                                    className="btn"
+                                                    onClick={() => handleLessonClick(lesson.slug)}
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        fontSize: '0.875rem',
+                                                        backgroundColor: selectedFile === lesson.slug ? 'var(--text-brand)' : 'var(--bg-secondary)',
+                                                        color: selectedFile === lesson.slug ? '#fff' : 'var(--text-primary)'
+                                                    }}
+                                                >
+                                                    {selectedFile === lesson.slug ? 'Close' : 'View'}
+                                                </button>
+                                                {user && user.role === 'admin' && (
+                                                    <>
+                                                        <button
+                                                            className="btn"
+                                                            onClick={() => setEditingLesson(lesson)}
+                                                            style={{
+                                                                padding: '0.25rem 0.75rem',
+                                                                fontSize: '0.875rem',
+                                                                backgroundColor: '#3b82f6',
+                                                                color: '#fff'
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="btn"
+                                                            onClick={() => handleDeleteLesson(lesson)}
+                                                            style={{
+                                                                padding: '0.25rem 0.75rem',
+                                                                fontSize: '0.875rem',
+                                                                backgroundColor: '#ef4444',
+                                                                color: '#fff'
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
-                                    {selectedFile === file.name && (
+                                    {selectedFile === lesson.slug && (
                                         <tr style={{ backgroundColor: 'var(--bg-primary)' }}>
                                             <td colSpan={2} style={{ padding: 'var(--spacing-lg)', borderBottom: '1px solid var(--border-color)' }}>
                                                 <div className="markdown-content" style={{ lineHeight: '1.7' }}>
@@ -111,6 +199,14 @@ export function GrammarPage() {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {editingLesson && (
+                <EditGrammarForm
+                    lesson={editingLesson}
+                    onLessonUpdated={handleLessonUpdated}
+                    onClose={() => setEditingLesson(null)}
+                />
             )}
         </div>
     );

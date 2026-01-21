@@ -46,14 +46,39 @@ function AppRoutes({ students }) {
         ) : (
           /* Student Routes - Catch all for students and show feed */
           <Route path="*" element={
-            <div className="container" style={{ padding: '2rem 0' }}>
-              <StudentHeader />
-              <StudentFeed studentId={user?.id} />
-            </div>
+            <StudentRouteContent students={students} />
           } />
         )}
       </Route>
     </Routes>
+  );
+}
+
+// Component to handle student route content and find linked student
+function StudentRouteContent({ students }) {
+  const { user } = useAuth();
+  
+  // Find the student record linked to this user
+  const linkedStudent = students.find(s => s.userId === user?._id);
+  
+  if (!linkedStudent) {
+    return (
+      <div className="container" style={{ padding: '2rem 0' }}>
+        <StudentHeader />
+        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            No student profile linked to your account. Please contact your administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container" style={{ padding: '2rem 0' }}>
+      <StudentHeader />
+      <StudentFeed studentId={linkedStudent.id} />
+    </div>
   );
 }
 

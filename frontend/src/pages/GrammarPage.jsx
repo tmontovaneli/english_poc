@@ -21,14 +21,20 @@ export function GrammarPage() {
 
     const fetchLessons = () => {
         setLoading(true);
-        fetch(`${API_Base}/grammar`)
+        const token = localStorage.getItem('token');
+        fetch(`${API_Base}/grammar`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
             .then(res => res.json())
             .then(data => {
-                setFiles(data);
+                setFiles(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
                 console.error("Failed to load grammar lessons", err);
+                setFiles([]);
                 setLoading(false);
             });
     };
@@ -49,7 +55,12 @@ export function GrammarPage() {
         }
 
         try {
-            const res = await fetch(`${API_Base}/grammar/slug/${slug}`);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_Base}/grammar/slug/${slug}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await res.json();
             setFileContent(data.content);
             setSelectedFile(slug);

@@ -208,6 +208,21 @@ app.patch('/api/student-assignments/:id', protect, async (req, res) => {
     }
 });
 
+app.delete('/api/student-assignments/:id', protect, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await StudentAssignment.findByIdAndDelete(id);
+
+        if (!link) {
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
+        res.json({ message: 'Assignment deleted successfully' });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 // Grammar Routes (Database)
 app.get('/api/grammar', protect, getAllLessons);
 app.get('/api/grammar/:id', protect, getLessonById);

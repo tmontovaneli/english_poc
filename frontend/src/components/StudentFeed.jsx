@@ -231,6 +231,19 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                         </div>
                                     )}
 
+                                    {/* Sentences Workflow UI */}
+                                    {assignment.template?.type === 'sentences' && assignment.status === 'in-progress' && (
+                                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                                            <textarea
+                                                value={essayContent[assignment.id] || ''}
+                                                onChange={(e) => handleEssayChange(assignment.id, e.target.value)}
+                                                placeholder="Write your sentences here..."
+                                                rows={4}
+                                                style={{ width: '100%', resize: 'vertical' }}
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Read-only Submission view */}
                                     {assignment.submissionContent && (
                                         <div style={{ backgroundColor: 'var(--bg-primary)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
@@ -240,7 +253,7 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                     )}
 
                                     {/* Teacher Feedback */}
-                                    {(assignment.teacherFeedback || isAdmin) && (
+                                    {((assignment.teacherFeedback || isAdmin) || (assignment.template?.type === 'sentences' && assignment.submissionContent)) && (
                                         <>
                                             {editingFeedback === assignment.id ? (
                                                 <div style={{ backgroundColor: 'var(--bg-secondary)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
@@ -388,6 +401,14 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                                         disabled={!essayContent[assignment.id]}
                                                     >
                                                         Submit Essay
+                                                    </button>
+                                                ) : assignment.template?.type === 'sentences' ? (
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        onClick={() => submitEssay(assignment)}
+                                                        disabled={!essayContent[assignment.id]}
+                                                    >
+                                                        Submit Sentences
                                                     </button>
                                                 ) : (
                                                     <button

@@ -33,7 +33,7 @@ function AdminStudentFeedView({ students }) {
         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{student.name}'s Feed</h2>
         <p style={{ color: 'var(--text-secondary)' }}>Level: {student.level}</p>
       </div>
-      <StudentFeed studentId={studentId} />
+      <StudentFeed studentId={studentId} isAdmin={true} />
     </div>
   );
 }

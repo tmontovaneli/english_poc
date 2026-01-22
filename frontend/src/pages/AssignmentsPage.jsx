@@ -1,4 +1,5 @@
 import { AddAssignmentForm } from '../components/AddAssignmentForm';
+import { EditAssignmentForm } from '../components/EditAssignmentForm';
 import { AssignmentTemplateList } from '../components/AssignmentTemplateList';
 
 export function AssignmentsPage() {
@@ -11,6 +12,9 @@ export function AssignmentsPage() {
 
             <div style={{ display: 'grid', gap: 'var(--spacing-xl)' }}>
                 <AddAssignmentForm />
+                <div className="card">
+                    <EditAssignmentForm />
+                </div>
                 <div className="card">
                     <AssignmentTemplateList />
                 </div>

@@ -52,15 +52,35 @@ export function DataProvider({ children }) {
         }
     };
 
-    const addAssignmentTemplate = async (title, description, type) => {
+    const addAssignmentTemplate = async (title, description, type, grammarLessonId = null) => {
         try {
+            const payload = { title, description, type };
+            if (grammarLessonId) {
+                payload.grammarLessonId = grammarLessonId;
+            }
             const newTemplate = await api('/assignments', {
                 method: 'POST',
-                body: JSON.stringify({ title, description, type })
+                body: JSON.stringify(payload)
             });
             setAssignments(prev => [...prev, newTemplate]);
         } catch (error) {
             console.error("Error adding assignment:", error);
+        }
+    };
+
+    const updateAssignmentTemplate = async (id, title, description, type, grammarLessonId = null) => {
+        try {
+            const payload = { title, description, type };
+            if (grammarLessonId !== undefined) {
+                payload.grammarLessonId = grammarLessonId;
+            }
+            const updatedTemplate = await api(`/assignments/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            setAssignments(prev => prev.map(a => a.id === id ? updatedTemplate : a));
+        } catch (error) {
+            console.error("Error updating assignment:", error);
         }
     };
 
@@ -155,6 +175,7 @@ export function DataProvider({ children }) {
             loading,
             addStudent,
             addAssignmentTemplate,
+            updateAssignmentTemplate,
             assignToStudent,
             updateAssignmentStatus,
             addUser,

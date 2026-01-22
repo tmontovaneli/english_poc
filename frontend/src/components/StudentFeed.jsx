@@ -11,6 +11,7 @@ export function StudentFeed({ studentId, isAdmin = false }) {
     const [editingFeedback, setEditingFeedback] = useState(null); // assignmentId | null
     const [feedbackText, setFeedbackText] = useState('');
     const [gradeText, setGradeText] = useState('');
+    const [expandedGrammarLessons, setExpandedGrammarLessons] = useState({}); // Map assignmentId -> expanded boolean
 
     const student = students.find(s => s.id === studentId);
 
@@ -169,6 +170,53 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                     <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)', lineHeight: '1.5' }}>
                                         {assignment.template?.description}
                                     </p>
+
+                                    {/* Grammar Lesson Display */}
+                                    {assignment.template?.type === 'grammar' && (
+                                        <div>
+                                            {assignment.template?.grammarLessonId ? (
+                                                <div className="markdown-content" style={{ backgroundColor: 'rgba(139, 92, 246, 0.05)', border: '1px solid #8b5cf6', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--spacing-md)', cursor: 'pointer' }} onClick={() => setExpandedGrammarLessons(prev => ({ ...prev, [assignment.id]: !prev[assignment.id] }))}>
+                                                        <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#8b5cf6', margin: 0 }}>
+                                                            Lesson {assignment.template.grammarLessonId.order}: {assignment.template.grammarLessonId.title}
+                                                        </h4>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setExpandedGrammarLessons(prev => ({ ...prev, [assignment.id]: !prev[assignment.id] }));
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: 'transparent',
+                                                                border: 'none',
+                                                                color: '#8b5cf6',
+                                                                fontSize: '1.25rem',
+                                                                cursor: 'pointer',
+                                                                padding: '0.25rem 0.5rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                transition: 'transform 0.2s',
+                                                                transform: expandedGrammarLessons[assignment.id] ? 'rotate(180deg)' : 'rotate(0deg)'
+                                                            }}
+                                                        >
+                                                            ▼
+                                                        </button>
+                                                    </div>
+                                                    {expandedGrammarLessons[assignment.id] && (
+                                                        <div style={{ padding: '0 var(--spacing-md) var(--spacing-md) var(--spacing-md)', lineHeight: '1.6', borderTop: '1px solid #8b5cf6' }}>
+                                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                                {assignment.template.grammarLessonId.content}
+                                                            </ReactMarkdown>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div style={{ backgroundColor: 'var(--bg-secondary)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                                    <p style={{ color: 'var(--text-secondary)' }}>No grammar lesson assigned to this assignment.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Essay Workflow UI */}
                                     {assignment.template?.type === 'essay' && assignment.status === 'in-progress' && (

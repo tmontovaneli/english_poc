@@ -101,7 +101,7 @@ app.patch('/api/students/:id/link-user', protect, requireAdmin, async (req, res)
 // Assignment Templates
 app.get('/api/assignments', protect, async (req, res) => {
     try {
-        const assignments = await Assignment.find().sort({ createdAt: -1 });
+        const assignments = await Assignment.find().populate('grammarLessonId').sort({ createdAt: -1 });
         res.json(assignments);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -110,13 +110,42 @@ app.get('/api/assignments', protect, async (req, res) => {
 
 app.post('/api/assignments', protect, async (req, res) => {
     try {
-        const { title, description, type } = req.body;
+        const { title, description, type, grammarLessonId } = req.body;
         const assignment = await Assignment.create({
             title,
             description,
-            type: type || 'essay'
+            type: type || 'essay',
+            grammarLessonId: grammarLessonId || null
         });
-        res.status(201).json(assignment);
+        const populatedAssignment = await assignment.populate('grammarLessonId');
+        res.status(201).json(populatedAssignment);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+app.put('/api/assignments/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, type, grammarLessonId } = req.body;
+        
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (type !== undefined) updateData.type = type;
+        if (grammarLessonId !== undefined) updateData.grammarLessonId = grammarLessonId || null;
+
+        const assignment = await Assignment.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true }
+        ).populate('grammarLessonId');
+
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        res.json(assignment);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

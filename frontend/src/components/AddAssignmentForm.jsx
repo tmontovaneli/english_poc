@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../hooks/useData';
 
 export function AddAssignmentForm() {
@@ -6,15 +6,46 @@ export function AddAssignmentForm() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [type, setType] = useState('essay');
+    const [grammarLessonId, setGrammarLessonId] = useState('');
+    const [grammarLessons, setGrammarLessons] = useState([]);
+    const [loadingLessons, setLoadingLessons] = useState(false);
+
+    const API_Base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+    useEffect(() => {
+        if (type === 'grammar') {
+            setLoadingLessons(true);
+            const token = localStorage.getItem('token');
+            fetch(`${API_Base}/grammar`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    setGrammarLessons(Array.isArray(data) ? data : []);
+                    setLoadingLessons(false);
+                })
+                .catch(err => {
+                    console.error('Failed to load grammar lessons', err);
+                    setLoadingLessons(false);
+                });
+        }
+    }, [type, API_Base]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!title.trim()) return;
+        if (type === 'grammar' && !grammarLessonId) {
+            alert('Please select a grammar lesson');
+            return;
+        }
 
-        addAssignmentTemplate(title, description, type);
+        addAssignmentTemplate(title, description, type, type === 'grammar' ? grammarLessonId : null);
         setTitle('');
         setDescription('');
         setType('essay');
+        setGrammarLessonId('');
     };
 
     return (
@@ -40,6 +71,28 @@ export function AddAssignmentForm() {
                         <option value="grammar">Grammar Lesson</option>
                     </select>
                 </div>
+
+                {type === 'grammar' && (
+                    <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
+                        <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Grammar Lesson</label>
+                        {loadingLessons ? (
+                            <div style={{ color: 'var(--text-secondary)' }}>Loading lessons...</div>
+                        ) : (
+                            <select
+                                value={grammarLessonId}
+                                onChange={(e) => setGrammarLessonId(e.target.value)}
+                                required={type === 'grammar'}
+                            >
+                                <option value="">Select a lesson...</option>
+                                {grammarLessons.map(lesson => (
+                                    <option key={lesson.id} value={lesson.id}>
+                                        {lesson.order} - {lesson.title}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                )}
 
                 <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
                     <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Description</label>

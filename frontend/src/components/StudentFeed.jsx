@@ -253,7 +253,7 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                     )}
 
                                     {/* Teacher Feedback */}
-                                    {(assignment.teacherFeedback || isAdmin) && (
+                                    {((assignment.teacherFeedback || isAdmin) || (assignment.template?.type === 'sentences' && assignment.submissionContent)) && (
                                         <>
                                             {editingFeedback === assignment.id ? (
                                                 <div style={{ backgroundColor: 'var(--bg-secondary)', padding: 'var(--spacing-md)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>

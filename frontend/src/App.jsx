@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useData, DataProvider } from './hooks/useData';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -11,6 +11,32 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { UsersPage } from './pages/UsersPage';
 import { PrivateRoute } from './components/PrivateRoute';
+
+// Component to display student feed for admin viewing
+function AdminStudentFeedView({ students }) {
+  const { studentId } = useParams();
+  const student = students.find(s => s.id === studentId);
+
+  if (!student) {
+    return (
+      <div className="container" style={{ padding: '2rem 0' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>Student not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '2rem 0' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{student.name}'s Feed</h2>
+        <p style={{ color: 'var(--text-secondary)' }}>Level: {student.level}</p>
+      </div>
+      <StudentFeed studentId={studentId} isAdmin={true} />
+    </div>
+  );
+}
 
 // Component to handle redirection logic inside Router
 function AppRoutes({ students }) {
@@ -37,6 +63,7 @@ function AppRoutes({ students }) {
         {isTeacher ? (
           <Route element={<AdminLayout currentUser="teacher" onSwitchUser={() => { }} students={students} />}>
             <Route path="/students" element={<StudentsPage />} />
+            <Route path="/students/:studentId/feed" element={<AdminStudentFeedView students={students} />} />
             <Route path="/assignments" element={<AssignmentsPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/grammar" element={<GrammarPage />} />

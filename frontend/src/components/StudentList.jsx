@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useData } from '../hooks/useData';
 import { useAuth } from '../context/AuthContext';
 import { AssignTaskModal } from './AssignTaskModal';
 
 export function StudentList() {
+    const navigate = useNavigate();
     const { students, studentAssignments, assignments, updateAssignmentStatus, users, linkUserToStudent } = useData();
     const { user: currentUser } = useAuth();
     const [assigningTo, setAssigningTo] = useState(null); // studentId | null
@@ -85,6 +87,19 @@ export function StudentList() {
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     {currentUser?.role === 'admin' && (
                                         <>
+                                            <button
+                                                onClick={() => navigate(`/students/${student.id}/feed`)}
+                                                className="btn"
+                                                style={{
+                                                    fontSize: '0.8rem',
+                                                    padding: '0.25rem 0.75rem',
+                                                    border: '1px solid var(--primary-color)',
+                                                    color: 'var(--primary-color)',
+                                                    background: 'transparent'
+                                                }}
+                                            >
+                                                📊 View Feed
+                                            </button>
                                             <button
                                                 onClick={() => setAssigningUser(student.id)}
                                                 className="btn"

@@ -111,6 +111,18 @@ export function DataProvider({ children }) {
         }
     };
 
+    const deleteStudentAssignment = async (id) => {
+        try {
+            await api(`/student-assignments/${id}`, {
+                method: 'DELETE'
+            });
+            setStudentAssignments(prev => prev.filter(a => a.id !== id));
+        } catch (error) {
+            console.error("Error deleting assignment:", error);
+            throw error;
+        }
+    };
+
     // User Management Actions
     const addUser = async (username, password, role) => {
         try {
@@ -178,6 +190,7 @@ export function DataProvider({ children }) {
             updateAssignmentTemplate,
             assignToStudent,
             updateAssignmentStatus,
+            deleteStudentAssignment,
             addUser,
             updateUser,
             deleteUser,

@@ -6,7 +6,7 @@ import { useData } from '../hooks/useData';
 
 export function StudentFeed({ studentId, isAdmin = false }) {
     const { user } = useAuth();
-    const { students, studentAssignments, assignments, updateAssignmentStatus } = useData();
+    const { students, studentAssignments, assignments, updateAssignmentStatus, deleteStudentAssignment } = useData();
     const [essayContent, setEssayContent] = useState({}); // Map assignmentId -> content
     const [editingFeedback, setEditingFeedback] = useState(null); // assignmentId | null
     const [feedbackText, setFeedbackText] = useState('');
@@ -398,6 +398,20 @@ export function StudentFeed({ studentId, isAdmin = false }) {
                                                         Complete
                                                     </button>
                                                 )
+                                            )}
+
+                                            {isAdmin && (
+                                                <button
+                                                    className="btn"
+                                                    style={{ backgroundColor: '#ef4444', color: '#fff', padding: '0.25rem 1rem', marginLeft: 'auto' }}
+                                                    onClick={() => {
+                                                        if (confirm('Are you sure you want to delete this assignment?')) {
+                                                            deleteStudentAssignment(assignment.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    Delete
+                                                </button>
                                             )}
                                         </div>
                                     </div>

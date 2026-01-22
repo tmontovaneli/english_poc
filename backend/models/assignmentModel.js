@@ -12,6 +12,12 @@ const assignmentSchema = mongoose.Schema({
         type: String,
         enum: ['essay', 'sentences', 'grammar'],
         default: 'essay'
+    },
+    grammarLessonId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GrammarLesson',
+        default: null,
+        sparse: true
     }
 }, {
     timestamps: true,
